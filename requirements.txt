@@ -1,0 +1,14 @@
+sentence-transformers
+chromadb
+requests
+python-dotenv
+pyyaml
+pytest
+black
+
+# Added in later phases:
+# ragas
+# streamlit
+# ollama
+# google-generativeai
+# groq

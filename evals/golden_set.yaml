@@ -1,0 +1,20 @@
+# Golden set for clinical-rag retrieval evaluation.
+#
+# Schema:
+#   question:            Natural-language question a user might ask.
+#   expected_source_url: The MedlinePlus topic URL that should appear in top-k results.
+#   notes:               Optional context about why this question/source pairing matters.
+#
+# TODO: expand to 30-50 questions (Phase 1, Month 1).
+
+- question: "What is the A1C test and what does it measure?"
+  expected_source_url: "https://medlineplus.gov/a1c.html"
+  notes: "Core diabetes management test; should be top result."
+
+- question: "What are the symptoms of high blood pressure?"
+  expected_source_url: "https://medlineplus.gov/highbloodpressure.html"
+  notes: "Hypertension is one of the most queried topics."
+
+- question: "How is type 2 diabetes treated?"
+  expected_source_url: "https://medlineplus.gov/diabetestype2.html"
+  notes: "Treatment-focused query; tests that retrieval surfaces the right sub-topic over general diabetes."

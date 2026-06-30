@@ -40,6 +40,7 @@ def _test_settings():
         llm_model="llama3.2:3b",
         llm_base_url="http://localhost:11434",
         llm_api_key=None,
+        weak_distance_threshold=0.45,
     )
 
 

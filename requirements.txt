@@ -5,6 +5,7 @@ python-dotenv
 pyyaml
 pytest
 black
+pydantic-ai-slim[openai]
 
 # Added in later phases:
 # ragas

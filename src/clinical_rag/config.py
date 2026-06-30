@@ -33,10 +33,18 @@ class Settings:
 
     # Retrieval
     top_k: int = 5
+    # Broaden-fallback trigger: first search is "weak" if best distance exceeds this.
+    weak_distance_threshold: float = field(
+        default_factory=lambda: float(os.getenv("WEAK_DISTANCE_THRESHOLD", "0.45"))
+    )
 
     # LLM (pluggable — implemented in Phase 2)
-    llm_provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "ollama"))
-    llm_model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "llama3.2:3b"))
+    llm_provider: str = field(
+        default_factory=lambda: os.getenv("LLM_PROVIDER", "ollama")
+    )
+    llm_model: str = field(
+        default_factory=lambda: os.getenv("LLM_MODEL", "llama3.2:3b")
+    )
     llm_base_url: str = field(
         default_factory=lambda: os.getenv("LLM_BASE_URL", "http://localhost:11434")
     )

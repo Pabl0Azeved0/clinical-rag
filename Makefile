@@ -1,7 +1,7 @@
 PYTHON := .venv/bin/python
 PIP    := .venv/bin/pip
 
-.PHONY: venv install ingest search test format clean
+.PHONY: venv install ingest search generate test format clean
 
 venv:
 	python3 -m venv .venv
@@ -15,6 +15,9 @@ ingest:
 
 search:
 	@read -p "Query: " q; $(PYTHON) scripts/search.py "$$q"
+
+generate:
+	@read -p "Question: " q; $(PYTHON) scripts/generate.py "$$q"
 
 test:
 	.venv/bin/pytest -q

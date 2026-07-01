@@ -5,16 +5,127 @@
 #   expected_source_url: The MedlinePlus topic URL that should appear in top-k results.
 #   notes:               Optional context about why this question/source pairing matters.
 #
-# TODO: expand to 30-50 questions (Phase 1, Month 1).
+# Every expected_source_url below is verified to exist in the ingested MedlinePlus
+# corpus. Used by evals/run_retrieval_eval.py to measure recall@k and MRR.
 
+# ── Endocrine / metabolic ─────────────────────────────────────────────────────
 - question: "What is the A1C test and what does it measure?"
   expected_source_url: "https://medlineplus.gov/a1c.html"
-  notes: "Core diabetes management test; should be top result."
+  notes: "Core diabetes management test; should be the top result."
 
+- question: "What is diabetes and what are its main types?"
+  expected_source_url: "https://medlineplus.gov/diabetes.html"
+
+- question: "What are the symptoms of an underactive thyroid?"
+  expected_source_url: "https://medlineplus.gov/hypothyroidism.html"
+
+- question: "How is obesity defined and what health risks does it carry?"
+  expected_source_url: "https://medlineplus.gov/obesity.html"
+
+# ── Cardiovascular ────────────────────────────────────────────────────────────
 - question: "What are the symptoms of high blood pressure?"
   expected_source_url: "https://medlineplus.gov/highbloodpressure.html"
   notes: "Hypertension is one of the most queried topics."
 
-- question: "How is type 2 diabetes treated?"
-  expected_source_url: "https://medlineplus.gov/diabetestype2.html"
-  notes: "Treatment-focused query; tests that retrieval surfaces the right sub-topic over general diabetes."
+- question: "What is the difference between LDL and HDL cholesterol?"
+  expected_source_url: "https://medlineplus.gov/cholesterol.html"
+
+- question: "What is a hemorrhagic stroke?"
+  expected_source_url: "https://medlineplus.gov/hemorrhagicstroke.html"
+
+# ── Respiratory ───────────────────────────────────────────────────────────────
+- question: "What triggers an asthma attack?"
+  expected_source_url: "https://medlineplus.gov/asthma.html"
+
+- question: "What is COPD and what causes it?"
+  expected_source_url: "https://medlineplus.gov/copd.html"
+
+- question: "What are the symptoms of pneumonia?"
+  expected_source_url: "https://medlineplus.gov/pneumonia.html"
+
+# ── Mental health ─────────────────────────────────────────────────────────────
+- question: "What are common symptoms of depression?"
+  expected_source_url: "https://medlineplus.gov/depression.html"
+
+- question: "What are anxiety disorders?"
+  expected_source_url: "https://medlineplus.gov/anxiety.html"
+
+# ── Infectious disease ────────────────────────────────────────────────────────
+- question: "How is hepatitis B transmitted?"
+  expected_source_url: "https://medlineplus.gov/hepatitisb.html"
+
+- question: "How is hepatitis C different from hepatitis B?"
+  expected_source_url: "https://medlineplus.gov/hepatitisc.html"
+
+- question: "How does tuberculosis spread from person to person?"
+  expected_source_url: "https://medlineplus.gov/tuberculosis.html"
+
+- question: "What causes shingles?"
+  expected_source_url: "https://medlineplus.gov/shingles.html"
+
+- question: "What are the symptoms of a urinary tract infection?"
+  expected_source_url: "https://medlineplus.gov/urinarytractinfections.html"
+
+# ── Neurological ──────────────────────────────────────────────────────────────
+- question: "How is a migraine different from a regular headache?"
+  expected_source_url: "https://medlineplus.gov/migraine.html"
+
+- question: "What are the early signs of Parkinson's disease?"
+  expected_source_url: "https://medlineplus.gov/parkinsonsdisease.html"
+
+- question: "What are the early symptoms of Alzheimer's disease?"
+  expected_source_url: "https://medlineplus.gov/alzheimersdisease.html"
+
+# ── Musculoskeletal ───────────────────────────────────────────────────────────
+- question: "Who is at risk for osteoporosis?"
+  expected_source_url: "https://medlineplus.gov/osteoporosis.html"
+
+- question: "What causes gout?"
+  expected_source_url: "https://medlineplus.gov/gout.html"
+
+- question: "How does osteoarthritis affect the joints?"
+  expected_source_url: "https://medlineplus.gov/osteoarthritis.html"
+
+- question: "What is fibromyalgia?"
+  expected_source_url: "https://medlineplus.gov/fibromyalgia.html"
+
+# ── Digestive ─────────────────────────────────────────────────────────────────
+- question: "What are gallstones and what symptoms do they cause?"
+  expected_source_url: "https://medlineplus.gov/gallstones.html"
+
+- question: "What are the symptoms of pancreatitis?"
+  expected_source_url: "https://medlineplus.gov/pancreatitis.html"
+
+- question: "What causes cirrhosis of the liver?"
+  expected_source_url: "https://medlineplus.gov/cirrhosis.html"
+
+- question: "What is celiac disease?"
+  expected_source_url: "https://medlineplus.gov/celiacdisease.html"
+
+- question: "What causes acid reflux and GERD?"
+  expected_source_url: "https://medlineplus.gov/gerd.html"
+
+# ── Renal ─────────────────────────────────────────────────────────────────────
+- question: "What are the symptoms of kidney stones?"
+  expected_source_url: "https://medlineplus.gov/kidneystones.html"
+
+# ── Blood ─────────────────────────────────────────────────────────────────────
+- question: "What causes anemia?"
+  expected_source_url: "https://medlineplus.gov/anemia.html"
+
+- question: "What is sickle cell disease?"
+  expected_source_url: "https://medlineplus.gov/sicklecelldisease.html"
+
+# ── Skin / dermatology ────────────────────────────────────────────────────────
+- question: "What is psoriasis?"
+  expected_source_url: "https://medlineplus.gov/psoriasis.html"
+
+- question: "What are the warning signs of melanoma?"
+  expected_source_url: "https://medlineplus.gov/melanoma.html"
+
+- question: "What causes eczema and how is it managed?"
+  expected_source_url: "https://medlineplus.gov/eczema.html"
+
+# ── Ophthalmology ─────────────────────────────────────────────────────────────
+- question: "What is glaucoma and how does it affect vision?"
+  expected_source_url: "https://medlineplus.gov/glaucoma.html"

@@ -1,0 +1,6 @@
+# Optional deps for the LLM-judge end-state eval (evals/run_ragas.py).
+# Kept out of the base requirements: RAGAS pulls in langchain + datasets, and the
+# judge metrics are only meaningful with a capable model. Install into the project
+# venv when you want to run it:  .venv/bin/pip install -r evals/requirements-ragas.txt
+ragas
+langchain-ollama

@@ -64,3 +64,24 @@ def test_valid_citation_regrounds():
     assert result.citations[0].index == 1
     assert result.citations[0].title == "A1C"
     assert result.confidence == pytest.approx(0.9)
+
+
+def test_uncited_strong_evidence_nudges():
+    retrieved = {1: {"title": "A1C", "url": "u", "distance": 0.1}}
+    output = _answer(answer="A1C measures glucose.")
+    with pytest.raises(ModelRetry):
+        check_grounding(output, retrieved, weak_threshold=0.45, allow_nudge=True)
+
+
+def test_uncited_weak_evidence_no_nudge():
+    retrieved = {1: {"title": "A1C", "url": "u", "distance": 0.6}}
+    output = _answer(answer="A1C measures glucose.")
+    result = check_grounding(output, retrieved, weak_threshold=0.45, allow_nudge=True)
+    assert result.grounded is False
+
+
+def test_uncited_nudge_disabled_on_last_retry():
+    retrieved = {1: {"title": "A1C", "url": "u", "distance": 0.1}}
+    output = _answer(answer="A1C measures glucose.")
+    result = check_grounding(output, retrieved, weak_threshold=0.45, allow_nudge=False)
+    assert result.grounded is False

@@ -3,8 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from pydantic_ai import Agent, PromptedOutput, RunContext
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+from pydantic_ai.messages import ToolCallPart
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.settings import ModelSettings
 
 from clinical_rag.config import Settings
 from clinical_rag.retrieval.retriever import Retriever
@@ -36,12 +39,24 @@ INSTRUCTIONS = (
 
 
 def build_model(settings: Settings) -> OpenAIChatModel:
-    """Map the existing pluggable provider config to a PydanticAI model."""
+    """Map the existing pluggable provider config to a PydanticAI model.
+
+    Both providers speak the OpenAI-compatible API, so the same model class is used
+    with a different base URL + key.
+    """
     if settings.llm_provider == "ollama":
         return OpenAIChatModel(
             settings.llm_model,
             provider=OpenAIProvider(
                 base_url=f"{settings.llm_base_url}/v1", api_key="ollama"
+            ),
+        )
+    if settings.llm_provider == "groq":
+        return OpenAIChatModel(
+            settings.llm_model,
+            provider=OpenAIProvider(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=settings.llm_api_key,
             ),
         )
     raise ValueError(f"agent model not wired for provider: {settings.llm_provider}")
@@ -80,26 +95,49 @@ def broaden_decision(
     return None
 
 
+async def _retrieve(deps: AgentDeps, query: str, k: int | None) -> list[dict]:
+    """Fetch passages via the configured transport (local Retriever or MCP)."""
+    # The model can emit a nonsensical k (e.g. 0); fall back to the configured top_k
+    # so both transports behave identically (the in-process Retriever masks this via
+    # `k or top_k`, but the MCP server would pass 0 straight to Chroma and error).
+    if not k or k <= 0:
+        k = getattr(deps.settings, "top_k", 5)
+    if deps.settings.retrieval_transport == "mcp":
+        from clinical_rag.mcp_server.client import search_evidence_over_mcp
+
+        return await search_evidence_over_mcp(deps.settings, query, k)
+    return deps.retriever.retrieve(query, k)
+
+
 def build_agent(settings: Settings) -> Agent[AgentDeps, ClinicalAnswer]:
-    # PromptedOutput (not native/tool output): small local models like llama3.2:3b
-    # skip the tool entirely under Ollama's native JSON-schema mode, and emit prose
-    # instead of a final-result tool call under tool-output mode. Prompted JSON keeps
-    # tool-calling intact while still yielding a parseable ClinicalAnswer; retries let
-    # the model self-correct malformed JSON.
+    # Output mode depends on model capability:
+    #  - Ollama / small local models (llama3.2:3b) can't do tool-based final output
+    #    reliably, so we use PromptedOutput (prompt for JSON text, parse it).
+    #  - Capable API providers (e.g. Groq) use the default tool output. They also
+    #    REJECT PromptedOutput here: it sets JSON mode, and Groq forbids json mode +
+    #    tool calling in the same request.
+    prompted = settings.llm_provider == "ollama"
     agent = Agent(
         build_model(settings),
         deps_type=AgentDeps,
-        output_type=PromptedOutput(ClinicalAnswer),
+        output_type=PromptedOutput(ClinicalAnswer) if prompted else ClinicalAnswer,
         instructions=INSTRUCTIONS,
         retries=3,
+        # Cap each LLM call so a stalled request can't hang the whole run.
+        model_settings=ModelSettings(
+            timeout=getattr(settings, "request_timeout", 60.0)
+        ),
     )
 
     @agent.tool
     async def search_evidence(
-        ctx: RunContext[AgentDeps], query: str, k: int = 5
+        ctx: RunContext[AgentDeps], query: str, k: int | None = None
     ) -> str:
-        """Search the indexed clinical evidence and return numbered, citation-tagged context."""
-        results = ctx.deps.retriever.retrieve(query, k)
+        """Search the indexed clinical evidence and return numbered, citation-tagged context.
+
+        k defaults to the configured top_k when the model omits it.
+        """
+        results = await _retrieve(ctx.deps, query, k)
         start = _next_index(ctx.deps.retrieved)
         context, numbered = _format_evidence(results, start)
         ctx.deps.retrieved.update(numbered)  # R6: store the numbered map on run context
@@ -118,7 +156,7 @@ def build_agent(settings: Settings) -> Agent[AgentDeps, ClinicalAnswer]:
         if refusal:
             return refusal
         ctx.deps.broaden_used = True
-        results = ctx.deps.retriever.retrieve(query, k)
+        results = await _retrieve(ctx.deps, query, k)
         start = _next_index(ctx.deps.retrieved)
         context, numbered = _format_evidence(results, start)
         ctx.deps.retrieved.update(numbered)
@@ -127,3 +165,54 @@ def build_agent(settings: Settings) -> Agent[AgentDeps, ClinicalAnswer]:
     agent.output_validator(grounding_validator)
 
     return agent
+
+
+# Surfaced when the model exhausts its retry budget (e.g. a weak local model that
+# keeps failing to cite under the grounding nudge). Degrading to an honest refusal
+# keeps the guardrail intact — we never ship a fabricated/ungrounded answer — while
+# not crashing the caller.
+UNGROUNDED_FALLBACK = (
+    "I couldn't ground an answer in the indexed evidence for that question. "
+    "Please rephrase or ask something more specific."
+)
+
+
+def run_agent(
+    agent: Agent[AgentDeps, ClinicalAnswer], question: str, deps: AgentDeps
+) -> tuple[ClinicalAnswer, list[dict]]:
+    """Run one agent turn; return (answer, tool-call trace).
+
+    A retry-exhaustion (`UnexpectedModelBehavior`) degrades to a grounded=False
+    refusal instead of raising, so scripts/UI never crash on a weak model. A transient
+    provider error (`ModelHTTPError`, e.g. Groq intermittently rejecting a malformed
+    tool call as tool_use_failed) is retried a few times with clean run state; if it
+    keeps failing the last error propagates for the caller to handle.
+    """
+
+    def _refusal():
+        return (
+            ClinicalAnswer(
+                answer=UNGROUNDED_FALLBACK, citations=[], grounded=False, confidence=0.0
+            ),
+            [],
+        )
+
+    last_error: ModelHTTPError | None = None
+    for _ in range(3):
+        try:
+            result = agent.run_sync(question, deps=deps)
+        except UnexpectedModelBehavior:
+            return _refusal()
+        except ModelHTTPError as exc:
+            last_error = exc
+            deps.retrieved.clear()
+            deps.broaden_used = False
+            continue
+        tool_calls = [
+            {"tool": p.tool_name, "args": p.args}
+            for m in result.all_messages()
+            for p in getattr(m, "parts", [])
+            if isinstance(p, ToolCallPart)
+        ]
+        return result.output, tool_calls
+    raise last_error

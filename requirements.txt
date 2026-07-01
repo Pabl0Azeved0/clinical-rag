@@ -6,10 +6,11 @@ pyyaml
 pytest
 black
 pydantic-ai-slim[openai]
+streamlit
+logfire
 
 # Added in later phases:
 # ragas
-# streamlit
 # ollama
 # google-generativeai
 # groq

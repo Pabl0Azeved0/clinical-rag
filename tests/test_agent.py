@@ -41,6 +41,8 @@ def _test_settings():
         llm_base_url="http://localhost:11434",
         llm_api_key=None,
         weak_distance_threshold=0.45,
+        retrieval_transport="in_process",
+        mcp_server_url=None,
     )
 
 
@@ -128,3 +130,25 @@ def test_agent_runs_and_populates_numbered_map():
     assert isinstance(result.output, ClinicalAnswer)
     assert result.output.citations[0].index == 1
     assert deps.retrieved  # R6: map must be non-empty after tool ran
+
+
+# ── build_model provider wiring ───────────────────────────────────────────────
+
+
+def test_build_model_groq_uses_openai_chat_model():
+    import pytest
+    from pydantic_ai.models.openai import OpenAIChatModel
+
+    from clinical_rag.agent.clinical_agent import build_model
+
+    model = build_model(
+        SimpleNamespace(
+            llm_provider="groq", llm_model="llama-3.3-70b-versatile", llm_api_key="k"
+        )
+    )
+    assert isinstance(model, OpenAIChatModel)
+
+    with pytest.raises(ValueError):
+        build_model(
+            SimpleNamespace(llm_provider="bogus", llm_model="x", llm_api_key=None)
+        )

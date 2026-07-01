@@ -67,6 +67,8 @@ def _settings():
         llm_base_url="http://localhost:11434",
         llm_api_key=None,
         weak_distance_threshold=0.45,
+        retrieval_transport="in_process",
+        mcp_server_url=None,
     )
 
 

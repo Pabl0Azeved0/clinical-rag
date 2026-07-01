@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from clinical_rag.agent.clinical_agent import AgentDeps, build_agent
+from clinical_rag.agent.clinical_agent import AgentDeps, build_agent, run_agent
 from clinical_rag.config import get_settings
 from clinical_rag.embeddings.embedder import Embedder
 from clinical_rag.generation.generator import DISCLAIMER
@@ -35,6 +35,10 @@ def main() -> None:
 
     cfg = get_settings()
 
+    from clinical_rag.observability import setup_tracing
+
+    setup_tracing(cfg)
+
     embedder = Embedder(cfg.embedding_model_name)
     store = ChromaStore(cfg.resolve(cfg.chroma_dir), cfg.collection_name, embedder)
     retriever = Retriever(store, cfg.top_k if args.k is None else args.k)
@@ -42,8 +46,7 @@ def main() -> None:
     deps = AgentDeps(retriever=retriever, settings=cfg)
     agent = build_agent(cfg)
 
-    result = agent.run_sync(args.question, deps=deps)
-    answer = result.output
+    answer, _ = run_agent(agent, args.question, deps)
 
     print(answer.answer)
     print()

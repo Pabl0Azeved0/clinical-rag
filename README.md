@@ -21,6 +21,8 @@ human-in-the-loop gate and three independent layers of evaluation.
 citations, and shows its tool-call trajectory. Low-confidence answers are held for human
 review before they're shown.*
 
+Try it → https://clinical-rag-dtazjxhcmsgkbmxhhafzku.streamlit.app/
+
 ---
 
 ## Why this project is different

@@ -39,6 +39,14 @@ def test_no_approval_when_grounded_and_confident():
     assert needs_approval(answer, confidence_threshold=0.6) is False
 
 
+def test_no_approval_when_ungrounded_without_evidence():
+    # A pure no-evidence refusal (nothing retrieved) surfaces directly — nothing to approve.
+    answer = _answer(grounded=False, confidence=0.0)
+    assert needs_approval(answer, confidence_threshold=0.6, has_evidence=False) is False
+    # But an ungrounded answer WITH evidence available still pauses for review.
+    assert needs_approval(answer, confidence_threshold=0.6, has_evidence=True) is True
+
+
 def test_apply_decision_approve_returns_original():
     answer = _answer()
     result = apply_decision(answer, Decision("approve"))

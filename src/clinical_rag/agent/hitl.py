@@ -15,9 +15,19 @@ from dataclasses import dataclass
 from clinical_rag.agent.models import ClinicalAnswer
 
 
-def needs_approval(answer: ClinicalAnswer, confidence_threshold: float) -> bool:
-    """True when an answer should pause for human review before being surfaced."""
-    return (not answer.grounded) or (answer.confidence < confidence_threshold)
+def needs_approval(
+    answer: ClinicalAnswer, confidence_threshold: float, has_evidence: bool = True
+) -> bool:
+    """True when an answer should pause for human review before being surfaced.
+
+    A *pure no-evidence refusal* (nothing was retrieved) has nothing for a human to
+    approve — it is surfaced directly as a clean refusal. Review is reserved for the
+    cases that actually warrant it: an ungrounded answer produced *despite* evidence
+    being available, or a grounded answer whose confidence is below the threshold.
+    """
+    if not answer.grounded:
+        return has_evidence
+    return answer.confidence < confidence_threshold
 
 
 @dataclass

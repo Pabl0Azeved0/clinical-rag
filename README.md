@@ -49,7 +49,7 @@ Three independent layers, so a change that helps one thing can't silently break 
 
 | Layer | What it checks | Result |
 |---|---|---|
-| **Unit** | pipeline + guardrails (validator, broaden cap, HITL, MCP, degradation) | **53 passing** |
+| **Unit** | pipeline + guardrails (validator, broaden cap, HITL, MCP, degradation) | **55 passing** |
 | **Trajectory** | the agent's *tool-call trace* per scenario (mocked model) | **5 / 5 scenarios** |
 | **Retrieval** | does the expected topic get retrieved, over a 36-question golden set | **recall@1 0.81 · recall@3 1.00 · MRR 0.90** |
 

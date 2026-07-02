@@ -12,12 +12,33 @@ Run with:  make ui   (or  .venv/bin/streamlit run app/streamlit_app.py)
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import streamlit as st
+
+
+def _load_cloud_secrets() -> None:
+    """On Streamlit Cloud, bridge st.secrets → env so get_settings() picks them up.
+
+    Must run before the first get_settings() call. No-op locally (no secrets file).
+    """
+    try:
+        for key in (
+            "LLM_PROVIDER",
+            "LLM_MODEL",
+            "LLM_API_KEY",
+            "TOP_K",
+            "AGENT_TIMEOUT",
+        ):
+            if key in st.secrets:
+                os.environ.setdefault(key, str(st.secrets[key]))
+    except Exception:
+        pass
+
 
 from clinical_rag.agent.clinical_agent import AgentDeps, build_agent, run_agent
 from clinical_rag.agent.hitl import Decision, apply_decision, needs_approval
@@ -264,7 +285,10 @@ def _answer_block(conv: dict, idx: int, res: dict) -> None:
     out = res["output"]
     cfg = get_settings()
     decision = conv["turns"][idx].get("decision")
-    if decision is None and needs_approval(out, cfg.approval_confidence_threshold):
+    gate = needs_approval(
+        out, cfg.approval_confidence_threshold, has_evidence=bool(res["retrieved"])
+    )
+    if decision is None and gate:
         _pending(conv, idx, res, cfg.approval_confidence_threshold)
     else:
         _resolved(res, decision)
@@ -433,6 +457,7 @@ def _sidebar() -> None:
 
 
 def main() -> None:
+    _load_cloud_secrets()  # bridge Cloud secrets → env before settings are read
     cfg = get_settings()
     from clinical_rag.observability import setup_tracing
 
